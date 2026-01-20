@@ -8,11 +8,11 @@ from cinema.serializers import (
     ActorSerializer,
     CinemaHallSerializer,
     MovieSerializer,
+    MovieListSerializer,
+    MovieDetailSerializer,
     MovieSessionSerializer,
     MovieSessionListSerializer,
     MovieSessionDetailSerializer,
-    MovieListSerializer,
-    MovieDetailSerializer,
     OrderSerializer,
     OrderListSerializer,
 )
@@ -26,7 +26,6 @@ class GenreViewSet(
 ):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    # Permission is applied globally via settings, but can be explicit:
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
@@ -68,7 +67,17 @@ class MovieViewSet(
         return MovieSerializer
 
 
-class MovieSessionViewSet(viewsets.ModelViewSet):
+class MovieSessionViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Endpoints for MovieSession.
+    Deletion is explicitly prohibited (no DestroyModelMixin).
+    """
     queryset = MovieSession.objects.all().select_related("movie", "cinema_hall")
     serializer_class = MovieSessionSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
@@ -96,11 +105,9 @@ class OrderViewSet(
     )
     serializer_class = OrderSerializer
     pagination_class = OrderPagination
-    # Orders strictly require authentication to access anything
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        """Retrieve the orders with filters"""
         return Order.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
